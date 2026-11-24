@@ -1,0 +1,6 @@
+
+{
+  "name": "mega-bet-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-24"
+}
