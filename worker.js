@@ -8,6 +8,7 @@ const corsHeaders = {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const path = url.pathname;
 
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
@@ -20,13 +21,74 @@ export default {
       );
     }
 
-    if (url.pathname !== "/" && url.pathname !== "/fixtures") {
+    if (!["/", "/fixtures", "/usage"].includes(path)) {
       return Response.json(
         { error: "Endpoint not found" },
         { status: 404, headers: corsHeaders }
       );
     }
 
+    if (!env.API_FOOTBALL_KEY) {
+      return Response.json(
+        { error: "API key is not configured" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // Check API subscription usage
+    if (path === "/usage") {
+      try {
+        const response = await fetch(
+          "https://v3.football.api-sports.io/status",
+          {
+            headers: {
+              "x-apisports-key": env.API_FOOTBALL_KEY
+            }
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.response) {
+          return Response.json(
+            { error: "Could not read API usage", details: data.errors },
+            { status: 502, headers: corsHeaders }
+          );
+        }
+
+        const info = data.response;
+
+        return Response.json({
+          success: true,
+          subscription: {
+            plan: info.subscription?.plan,
+            active: info.subscription?.active
+          },
+          requests: {
+            used: info.requests?.current,
+            limit: info.requests?.limit,
+            remaining:
+              typeof info.requests?.current === "number" &&
+              typeof info.requests?.limit === "number"
+                ? Math.max(0, info.requests.limit - info.requests.current)
+                : null
+          }
+        }, {
+          headers: {
+            ...corsHeaders,
+            "Cache-Control": "no-store"
+          }
+        });
+
+      } catch (error) {
+        return Response.json(
+          { error: "Usage check failed" },
+          { status: 502, headers: corsHeaders }
+        );
+      }
+    }
+
+    // Load today's fixtures
     const date = url.searchParams.get("date") ||
       new Intl.DateTimeFormat("en-CA", {
         timeZone: "Africa/Casablanca",
@@ -42,22 +104,12 @@ export default {
       );
     }
 
-    if (!env.API_FOOTBALL_KEY) {
-      return Response.json(
-        { error: "API key is not configured" },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
     const cache = caches.default;
     const cacheUrl = new URL(request.url);
     cacheUrl.pathname = "/__mega_bet_cache/fixtures";
     cacheUrl.search = `?date=${date}`;
 
-    const cacheKey = new Request(cacheUrl.toString(), {
-      method: "GET"
-    });
-
+    const cacheKey = new Request(cacheUrl.toString());
     const cached = await cache.match(cacheKey);
 
     if (cached) {
@@ -87,8 +139,7 @@ export default {
 
       const data = await response.json();
 
-      const isRateLimited =
-        data.errors &&
+      const limited = data.errors &&
         Object.keys(data.errors).some(key =>
           key.toLowerCase().includes("ratelimit")
         );
@@ -97,25 +148,16 @@ export default {
         status: response.status,
         headers: {
           ...corsHeaders,
-          "Cache-Control": isRateLimited
+          "Cache-Control": limited
             ? "public, max-age=30"
-            : "public, max-age=600",
-          "X-MEGA-BET-CACHE": "MISS"
+            : "public, max-age=600"
         }
       });
 
-      // Cache successful results for 10 minutes.
-      // Cache rate-limit errors briefly to avoid repeated requests.
-      if (response.ok && !isRateLimited) {
+      if (response.ok && !limited) {
         await cache.put(cacheKey, result.clone());
-      } else if (isRateLimited) {
-        const shortCache = Response.json(data, {
-          headers: {
-            ...corsHeaders,
-            "Cache-Control": "public, max-age=30"
-          }
-        });
-        await cache.put(cacheKey, shortCache);
+      } else if (limited) {
+        await cache.put(cacheKey, result.clone());
       }
 
       return result;
