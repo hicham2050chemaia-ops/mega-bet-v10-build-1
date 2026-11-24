@@ -20,6 +20,28 @@ export default {
       );
     }
 
+    if (url.pathname !== "/" && url.pathname !== "/fixtures") {
+      return Response.json(
+        { error: "Endpoint not found" },
+        { status: 404, headers: corsHeaders }
+      );
+    }
+
+    const date = url.searchParams.get("date") ||
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Africa/Casablanca",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(new Date());
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return Response.json(
+        { error: "Invalid date. Use YYYY-MM-DD" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     if (!env.API_FOOTBALL_KEY) {
       return Response.json(
         { error: "API key is not configured" },
@@ -27,21 +49,26 @@ export default {
       );
     }
 
-    if (url.pathname !== "/" && url.pathname !== "/fixtures") {
-      return Response.json(
-        { error: "Endpoint not found. Use /fixtures" },
-        { status: 404, headers: corsHeaders }
-      );
-    }
+    const cache = caches.default;
+    const cacheUrl = new URL(request.url);
+    cacheUrl.pathname = "/__mega_bet_cache/fixtures";
+    cacheUrl.search = `?date=${date}`;
 
-    const date = url.searchParams.get("date") ||
-      new Date().toISOString().slice(0, 10);
+    const cacheKey = new Request(cacheUrl.toString(), {
+      method: "GET"
+    });
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return Response.json(
-        { error: "Date must be YYYY-MM-DD" },
-        { status: 400, headers: corsHeaders }
-      );
+    const cached = await cache.match(cacheKey);
+
+    if (cached) {
+      return new Response(cached.body, {
+        status: cached.status,
+        headers: {
+          ...Object.fromEntries(cached.headers),
+          ...corsHeaders,
+          "X-MEGA-BET-CACHE": "HIT"
+        }
+      });
     }
 
     try {
@@ -54,19 +81,44 @@ export default {
 
       const response = await fetch(apiUrl, {
         headers: {
-          "x-apisports-key": env.API_FOOTBALL_KEY,
-        },
+          "x-apisports-key": env.API_FOOTBALL_KEY
+        }
       });
 
       const data = await response.json();
 
-      return Response.json(data, {
+      const isRateLimited =
+        data.errors &&
+        Object.keys(data.errors).some(key =>
+          key.toLowerCase().includes("ratelimit")
+        );
+
+      const result = Response.json(data, {
         status: response.status,
         headers: {
           ...corsHeaders,
-          "Cache-Control": "no-store",
-        },
+          "Cache-Control": isRateLimited
+            ? "public, max-age=30"
+            : "public, max-age=600",
+          "X-MEGA-BET-CACHE": "MISS"
+        }
       });
+
+      // Cache successful results for 10 minutes.
+      // Cache rate-limit errors briefly to avoid repeated requests.
+      if (response.ok && !isRateLimited) {
+        await cache.put(cacheKey, result.clone());
+      } else if (isRateLimited) {
+        const shortCache = Response.json(data, {
+          headers: {
+            ...corsHeaders,
+            "Cache-Control": "public, max-age=30"
+          }
+        });
+        await cache.put(cacheKey, shortCache);
+      }
+
+      return result;
 
     } catch (error) {
       return Response.json(
@@ -74,5 +126,5 @@ export default {
         { status: 502, headers: corsHeaders }
       );
     }
-  },
+  }
 };
