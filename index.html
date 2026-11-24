@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#050907">
+  <meta name="description" content="MEGA BET V10 - Football matches, stats and analysis">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <title>MEGA BET V10</title>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="ball">⚽</span><div><b>MEGA BET <em>V10</em></b><small>FOOTBALL • STATS • ANALYSIS</small></div></div>
+    <button id="installBtn" class="install hidden">تثبيت التطبيق</button>
+  </header>
+  <main>
+    <section class="hero">
+      <div><span class="eyebrow">BUILD 1 · SMART FOOTBALL HUB</span><h1>عالم كرة القدم<br><strong>بين يديك</strong></h1>
+      <p>تابع المباريات، النتائج والإحصائيات في واجهة واحدة.</p></div>
+      <div class="hero-ball">⚽</div>
+    </section>
+    <nav class="tabs" aria-label="أقسام التطبيق">
+      <button class="tab active" data-tab="matches">المباريات</button>
+      <button class="tab" data-tab="stats">الإحصائيات</button>
+      <button class="tab" data-tab="analysis">التحليل</button>
+      <button class="tab" data-tab="about">حول التطبيق</button>
+    </nav>
+    <section id="matches" class="panel">
+      <div class="section-head"><div><span class="eyebrow">MATCH CENTER</span><h2>مباريات اليوم</h2></div><span id="dataMode" class="status">وضع تجريبي</span></div>
+      <div class="filters"><button class="filter active" data-filter="all">الكل</button><button class="filter" data-filter="live">مباشر</button><button class="filter" data-filter="upcoming">قادمة</button><button class="filter" data-filter="finished">منتهية</button></div>
+      <div id="matchList" class="match-list" aria-live="polite"></div>
+      <p class="note">البيانات المعروضة تجريبية إلى حين ربط مزود نتائج رياضية موثوق.</p>
+    </section>
+    <section id="stats" class="panel hidden">
+      <div class="section-head"><div><span class="eyebrow">TEAM PERFORMANCE</span><h2>إحصائيات الفرق</h2></div></div>
+      <div class="stat-grid"><article class="stat-card"><small>نسبة الاستحواذ</small><b>—</b><span>تظهر بعد توفير بيانات المباراة</span></article><article class="stat-card"><small>التسديدات</small><b>—</b><span>تظهر بعد توفير بيانات المباراة</span></article><article class="stat-card"><small>الركنيات</small><b>—</b><span>تظهر بعد توفير بيانات المباراة</span></article></div>
+    </section>
+    <section id="analysis" class="panel hidden">
+      <div class="section-head"><div><span class="eyebrow">MATCH INSIGHTS</span><h2>التحليل والتوقعات</h2></div></div>
+      <div class="info-card"><h3>تحليل مبني على البيانات</h3><p>لن يعرض التطبيق توقعات على أنها مؤكدة. بعد ربط مصدر إحصائي، يمكن إضافة مؤشرات مثل الفورمة، المواجهات السابقة، الأهداف المسجلة والمستقبلة.</p></div>
+      <div class="warning">التوقعات احتمالية وليست ضماناً للنتائج. لا تراهن إلا بمسؤولية ووفق القوانين المحلية.</div>
+    </section>
+    <section id="about" class="panel hidden">
+      <div class="section-head"><div><span class="eyebrow">MEGA BET V10</span><h2>حول النسخة</h2></div></div>
+      <div class="info-card"><p>واجهة PWA قابلة للتثبيت على Android، بتصميم أسود وأخضر نيوني.</p><p><b>حالة الربط:</b> غير مربوط بمزود مباريات بعد.</p><p><b>النسخة:</b> V10 BUILD 1</p></div>
+    </section>
+  </main>
+  <footer><span>MEGA BET <em>V10</em></span><small>واجهة معلومات رياضية · BUILD 1</small></footer>
+  <script src="app.js"></script>
+</body>
+</html>

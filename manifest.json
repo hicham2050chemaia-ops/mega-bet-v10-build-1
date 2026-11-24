@@ -1,0 +1,20 @@
+{
+  "name": "MEGA BET V10",
+  "short_name": "MEGA BET",
+  "description": "Football matches, stats and analysis",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050907",
+  "theme_color": "#050907",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
